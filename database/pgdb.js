@@ -1,36 +1,27 @@
 const { camelizeKeys } = require('humps');
 
+const withErrorHandling = (func) => async (...args) => {
+  try {
+    const result = await func(...args);
+    return result;
+  } catch (err) {
+    console.log('ERROR: ', err);
+    throw err;
+  }
+};
+
 module.exports = (pgPool) => {
+  const buildQuerier = (query) => {
+    return withErrorHandling(async function (...args) {
+      const dbResponse = await pgPool.query(query, args);
+      return camelizeKeys(dbResponse.rows);
+    });
+  };
+
   return {
-    async getTeams() {
-      console.log('jG INERERE');
-      try {
-        const teams = await pgPool
-          .query(`select * from teams`)
-          .then((res) => {
-            console.log('RES', JSON.stringify(res));
-            return camelizeKeys(res.rows);
-          }).catch(err => {
-            console.log('JG ERR', err)
-          })
-        return teams;
-      } catch (err) {
-        console.log('JG ERR ', err);
-      }
-    },
-    getPlayersForTeam(team) {
-      console.log('jG in hhhhhhhh');
-      return pgPool
-        .query(
-          `
-        select * from players
-        where team_id = $1
-      `,
-          [team.id]
-        )
-        .then((res) => {
-          return camelizeKeys(res.rows);
-        });
-    },
+    getPlayers: buildQuerier('SELECT * FROM players'),
+    getTeams: buildQuerier('SELECT * FROM teams'),
+    getPlayersForTeam: (team) =>
+      buildQuerier('SELECT * FROM players WHERE team_id = $1')(team.id),
   };
 };

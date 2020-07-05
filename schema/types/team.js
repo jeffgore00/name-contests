@@ -13,20 +13,17 @@ module.exports = new GraphQLObjectType({
   name: 'Team',
   fields: {
     id: { type: GraphQLID },
-    name: { type: GraphQLString, resolve: obj => obj.teamName },
+    name: { type: GraphQLString, resolve: (obj) => obj.teamName },
     city: { type: new GraphQLNonNull(GraphQLString) },
-    fullName: { type: GraphQLString, resolve: obj => `${obj.city} ${obj.teamName}`},
+    fullName: {
+      type: GraphQLString,
+      resolve: (obj) => `${obj.city} ${obj.teamName}`,
+    },
     players: {
       type: new GraphQLList(Player),
-      async resolve(obj, args, { pgPool }) {
-        /* Note here that `obj` is an instance of the given `Team`. */
-        try {
-          const players = await postgres(pgPool).getPlayersForTeam(obj);
-          return players;
-        } catch (err) {
-          console.log('WTF ', err);
-        }
-      },
+      resolve: (team, args, { pgPool }) =>
+        postgres(pgPool).getPlayersForTeam(team),
+      /* Note here that `obj` is an instance of the given `Team`. */
     },
   },
 });
