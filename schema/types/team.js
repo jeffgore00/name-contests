@@ -7,7 +7,6 @@ const {
 } = require('graphql');
 
 const Player = require('./player');
-const postgres = require('../../database/pgdb');
 
 module.exports = new GraphQLObjectType({
   name: 'Team',
@@ -21,8 +20,16 @@ module.exports = new GraphQLObjectType({
     },
     players: {
       type: new GraphQLList(Player),
-      resolve: (team, args, { pgPool }) =>
-        postgres(pgPool).getPlayersForTeam(team),
+      resolve: async (team, args, { loaders }) => {
+        console.log('TRYNA LOAD WITH ', JSON.stringify(team))
+        try {
+        const result = await loaders.getPlayersForTeam.load(team.id);
+        console.log('RSESS', result)
+        return result
+        } catch (e) {
+          console.log('ORR', e)
+        }
+      }
       /* Note here that `obj` is an instance of the given `Team`. */
     },
   },
