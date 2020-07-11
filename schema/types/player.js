@@ -4,17 +4,35 @@ const {
   GraphQLObjectType,
   GraphQLString,
   GraphQLNonNull,
-  GraphQLInt
+  GraphQLInt,
 } = require('graphql');
-
-const PlayerStatus = require('./player-status')
 
 module.exports = new GraphQLObjectType({
   name: 'Player',
-  fields: {
-    id: { type: GraphQLID },
-    fullName: { type: new GraphQLNonNull(GraphQLString) },
-    jerseyNumber: { type: new GraphQLNonNull(GraphQLInt) },
-    status: { type: new GraphQLNonNull(PlayerStatus), resolve: obj => obj.active }
-  }
-})
+  fields: () => {
+    const Team = require('./team');
+    const PlayerStatus = require('./player-status');
+
+    return {
+      id: { type: GraphQLID },
+      fullName: { type: new GraphQLNonNull(GraphQLString) },
+      jerseyNumber: { type: new GraphQLNonNull(GraphQLInt) },
+      status: {
+        type: new GraphQLNonNull(PlayerStatus),
+        resolve: (obj) => obj.active,
+      },
+      team: {
+        type: Team,
+        resolve: (player, args, { loaders }) =>
+          loaders.getTeamsById.load(player.teamId),
+      },
+      teamName: {
+        type: GraphQLString,
+        resolve: async (player, args, { loaders }) => {
+          const team = await loaders.getTeamsById.load(player.teamId)
+          return `${team.city} ${team.teamName}`;
+        }
+      }
+    };
+  },
+});

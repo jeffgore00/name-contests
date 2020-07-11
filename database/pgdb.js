@@ -4,43 +4,56 @@ const _ = require('lodash');
 const withErrorHandling = (func) => async (...args) => {
   try {
     const result = await func(...args);
-    console.log('SUCCESS, result: ', JSON.stringify(result, null, 2));
+    console.log('SUCCESS, result: ', result);
     return result;
   } catch (err) {
-    // console.log('ERROR: ', err);
+    console.log('ERROR: ', err);
     throw err;
   }
 };
 
-const orderByFieldValueList = (rows, fieldValues, fieldName, singleObject) => {
-  // return the rows ordered for the fieldValues
-  console.log('JG fieldValues, fieldName, singleObject', fieldValues, fieldName, singleObject);
+const groupRowsByFieldValue = (rows, fieldValues, fieldName) => {
   const records = camelizeKeys(rows);
   const recordsGroupedByFieldValue = _.groupBy(records, fieldName);
-  const finalArray =  fieldValues.map((fieldValue) => {
-    const keyArray = recordsGroupedByFieldValue[fieldValue];
-    if (keyArray) {
-      return singleObject ? keyArray[0] : keyArray;
-    }
-    return singleObject ? {} : [];
-  });
-  console.log('FINAL ARRAY', finalArray)
-  return finalArray
+  return fieldValues.map(
+    (fieldValue) => recordsGroupedByFieldValue[fieldValue]
+  );
 };
 
+const dearrayGroups = (groupedRecords) =>
+  groupedRecords.map((group) => group && group[0]);
+
 module.exports = (pgPool) => {
-  const buildQuerier = (query) => {
-    return withErrorHandling(async function (fieldValueList, fieldName) {
-      console.log('JG KEY LIST', fieldValueList);
+  const buildStandardQuerier = (query) => {
+    return withErrorHandling(async function (...args) {
       try {
-        let dbResponse;
-        if (fieldValueList && fieldValueList.length) {
-          dbResponse = await pgPool.query(query, [fieldValueList]);
-          return orderByFieldValueList(dbResponse.rows, fieldValueList, fieldName)
-        } else {
-          dbResponse = await pgPool.query(query);
-          return camelizeKeys(dbResponse.rows);
-        }
+        const dbResponse = await pgPool.query(query, args);
+        const records = dbResponse.rows.map((record) => camelizeKeys(record));
+        return records;
+      } catch (err) {
+        console.log('IORR', err);
+      }
+    });
+  };
+
+  const buildDataLoaderQuerier = (query) => {
+    return withErrorHandling(async function (
+      fieldValueList,
+      fieldName,
+      singleRecordPerGroup
+    ) {
+      try {
+        console.log('JG FIELDVALUELIST', fieldName, fieldValueList)
+        const dbResponse = await pgPool.query(query, [fieldValueList]);
+        const records = dbResponse.rows.map((record) => camelizeKeys(record));
+        const groupedRecords = groupRowsByFieldValue(
+          records,
+          fieldValueList,
+          fieldName //  [           1              ,       2    ]
+        ); // array of arrays: [[{ record1 } ,{ record2 }], [{ record3}]]
+        return singleRecordPerGroup
+          ? dearrayGroups(groupedRecords)
+          : groupedRecords;
       } catch (err) {
         console.log('IORR', err);
       }
@@ -48,12 +61,20 @@ module.exports = (pgPool) => {
   };
 
   return {
-    getPlayers: buildQuerier('SELECT * FROM players'),
-    getTeams: buildQuerier('SELECT * FROM teams'),
-    getPlayersForTeam: (teamIds) =>
-      buildQuerier('SELECT * FROM players WHERE team_id = ANY($1)')(
+    getPlayers: buildStandardQuerier('SELECT * FROM players'),
+    getTeams: buildStandardQuerier('SELECT * FROM teams'),
+    getPlayersForTeams: (teamIds) =>
+      buildDataLoaderQuerier('SELECT * FROM players WHERE team_id = ANY($1)')(
         teamIds,
         'teamId'
       ),
+    getOwnerForTeams: (teamIds) =>
+      buildDataLoaderQuerier(
+        'SELECT * FROM owners WHERE owned_team_id = ANY($1)'
+      )(teamIds, 'ownedTeamId', true),
+    getTeamsById: (teamIds) =>
+      buildDataLoaderQuerier(
+        'SELECT * FROM teams WHERE id = ANY($1)'
+      )(teamIds, 'id', true),
   };
 };

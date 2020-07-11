@@ -26,10 +26,10 @@ const players = {
 // we can start asking questions
 const RootQueryType = new GraphQLObjectType({
   name: 'RootQueryType',
-  fields: {
+  fields: () => ({
     teams,
     players
-  }
+  })
 });
 
 const schema = new GraphQLSchema({
