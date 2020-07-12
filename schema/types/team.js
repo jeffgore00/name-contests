@@ -14,16 +14,16 @@ module.exports = new GraphQLObjectType({
 
     return {
       id: { type: GraphQLID },
-      name: { type: GraphQLString, resolve: (obj) => obj.teamName },
+      name: { type: GraphQLString },
       city: { type: new GraphQLNonNull(GraphQLString) },
       fullName: {
         type: GraphQLString,
-        resolve: (obj) => `${obj.city} ${obj.teamName}`,
+        resolve: (obj) => `${obj.city} ${obj.name}`,
       },
-      owner: {
-        type: Owner,
+      owners: {
+        type: new GraphQLList(Owner),
         resolve: (team, args, { loaders }) =>
-          loaders.getOwnerForTeams.load(team.id),
+          loaders.getOwnersForTeams.load(team.id),
       },
       players: {
         type: new GraphQLList(Player),

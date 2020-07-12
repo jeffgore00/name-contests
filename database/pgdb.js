@@ -4,7 +4,7 @@ const _ = require('lodash');
 const withErrorHandling = (func) => async (...args) => {
   try {
     const result = await func(...args);
-    console.log('SUCCESS, result: ', result);
+    // console.log('SUCCESS, result: ', result);
     return result;
   } catch (err) {
     console.log('ERROR: ', err);
@@ -42,39 +42,55 @@ module.exports = (pgPool) => {
       fieldName,
       singleRecordPerGroup
     ) {
-      try {
-        console.log('JG FIELDVALUELIST', fieldName, fieldValueList)
-        const dbResponse = await pgPool.query(query, [fieldValueList]);
-        const records = dbResponse.rows.map((record) => camelizeKeys(record));
-        const groupedRecords = groupRowsByFieldValue(
-          records,
-          fieldValueList,
-          fieldName //  [           1              ,       2    ]
-        ); // array of arrays: [[{ record1 } ,{ record2 }], [{ record3}]]
-        return singleRecordPerGroup
-          ? dearrayGroups(groupedRecords)
-          : groupedRecords;
-      } catch (err) {
-        console.log('IORR', err);
-      }
+      const dbResponse = await pgPool.query(query, [fieldValueList]);
+      const records = dbResponse.rows.map((record) => camelizeKeys(record));
+      console.log('JG UNGROUPED RECORDS', fieldName, fieldValueList, records)
+      const groupedRecords = groupRowsByFieldValue(
+        records,
+        fieldValueList,
+        fieldName //  [           1              ,       2    ]
+      ); // array of arrays: [[{ record1 } ,{ record2 }], [{ record3}]]
+      console.log('JG GROUPED RECORDS', fieldName, fieldValueList, groupedRecords)
+      return singleRecordPerGroup
+        ? dearrayGroups(groupedRecords)
+        : groupedRecords;
     });
   };
 
   return {
     getPlayers: buildStandardQuerier('SELECT * FROM players'),
+    getPlayersByName: (nameStr) =>
+      buildStandardQuerier('SELECT * FROM players WHERE full_name ILIKE $1')(
+        `%${nameStr}%`
+      ),
     getTeams: buildStandardQuerier('SELECT * FROM teams'),
+    getTeamsByName: (nameStr) =>
+      buildStandardQuerier(
+        'SELECT * FROM teams WHERE city ILIKE $1 OR name ILIKE $1'
+      )(`%${nameStr}%`),
     getPlayersForTeams: (teamIds) =>
       buildDataLoaderQuerier('SELECT * FROM players WHERE team_id = ANY($1)')(
         teamIds,
         'teamId'
       ),
-    getOwnerForTeams: (teamIds) =>
+    getOwnersForTeams: (teamIds) =>
       buildDataLoaderQuerier(
         'SELECT * FROM owners WHERE owned_team_id = ANY($1)'
-      )(teamIds, 'ownedTeamId', true),
-    getTeamsById: (teamIds) =>
-      buildDataLoaderQuerier(
-        'SELECT * FROM teams WHERE id = ANY($1)'
-      )(teamIds, 'id', true),
+      )(teamIds, 'ownedTeamId'),
+    getTeamsByIds: (teamIds) =>
+      buildDataLoaderQuerier('SELECT * FROM teams WHERE id = ANY($1)')(
+        teamIds,
+        'id',
+        true
+      ),
   };
 };
+
+/*
+{
+  players
+}
+
+SELECT * FROM players INNER JOIN teams ON players.teamId = teams.id WHERE
+
+*/

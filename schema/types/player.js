@@ -24,15 +24,16 @@ module.exports = new GraphQLObjectType({
       team: {
         type: Team,
         resolve: (player, args, { loaders }) =>
-          loaders.getTeamsById.load(player.teamId),
+          player.teamId && loaders.getTeamsByIds.load(player.teamId),
       },
       teamName: {
         type: GraphQLString,
         resolve: async (player, args, { loaders }) => {
-          const team = await loaders.getTeamsById.load(player.teamId)
-          return `${team.city} ${team.teamName}`;
-        }
-      }
+          if (!player.teamId) return null;
+          const team = await loaders.getTeamsByIds.load(player.teamId);
+          return `${team.city} ${team.name}`;
+        },
+      },
     };
   },
 });
