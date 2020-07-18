@@ -9,6 +9,7 @@ const {
 const postgres = require('../database/pgdb');
 const Team = require('./types/team');
 const Player = require('./types/player');
+const AddTeam = require('./mutations/AddTeam')
 
 const teams = {
   type: new GraphQLList(Team),
@@ -54,9 +55,16 @@ const RootQueryType = new GraphQLObjectType({
   }),
 });
 
+const RootMutationType = new GraphQLObjectType({
+  name: 'RootMutationType',
+  fields: () => ({
+    addTeam: AddTeam
+  })
+})
+
 const schema = new GraphQLSchema({
   query: RootQueryType,
-  // mutation: ...
+  mutation: RootMutationType
 });
 
 module.exports = schema;

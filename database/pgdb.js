@@ -83,14 +83,9 @@ module.exports = (pgPool) => {
         'id',
         true
       ),
+    addTeam: (team) =>
+      buildStandardQuerier(
+        'INSERT INTO TEAMS (city, name) VALUES ($1, $2) RETURNING *'
+      )(team.city, team.name).then(rows => rows[0]),
   };
 };
-
-/*
-{
-  players
-}
-
-SELECT * FROM players INNER JOIN teams ON players.teamId = teams.id WHERE
-
-*/
