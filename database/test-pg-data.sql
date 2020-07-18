@@ -3,7 +3,7 @@ drop table if exists players CASCADE;
 
 CREATE TABLE teams (
   id serial primary key,
-  team_name varchar(128) not null,
+  name varchar(128) not null,
   city varchar(128) not null,
   created_at timestamp not null default current_timestamp
 );
@@ -21,11 +21,13 @@ CREATE TABLE players (
 
 INSERT INTO teams (team_name, city)
 VALUES
-('Lakers','Los Angeles');
+('Lakers','Los Angeles'),
+('Pelicans','New Orleans');
 
 
 INSERT INTO players (full_name, jersey_number, active, team_id)
 VALUES
 ('LeBron James', 23, true, 1),
 ('Anthony Davis', 6, true, 1),
-('Danny Green', 33, true, 1);
+('Danny Green', 33, true, 1),
+('Zion Williamson', 69, true, 2);
