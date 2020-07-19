@@ -10,8 +10,8 @@ const {
 module.exports = new GraphQLObjectType({
   name: 'Player',
   fields: () => {
-    const Team = require('./team');
-    const PlayerStatus = require('./player-status');
+    const Team = require('./Team');
+    const PlayerStatus = require('./PlayerStatus');
 
     return {
       id: { type: GraphQLID },

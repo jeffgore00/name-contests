@@ -5,7 +5,7 @@ const {
 } = require('graphql');
 
 const pgdb = require('../../database/pgdb');
-const Team = require('../types/team');
+const Team = require('../types/Team');
 
 const TeamInput = new GraphQLInputObjectType({
   name: 'TeamInput',

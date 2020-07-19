@@ -26,13 +26,9 @@ const dearrayGroups = (groupedRecords) =>
 module.exports = (pgPool) => {
   const buildStandardQuerier = (query) => {
     return withErrorHandling(async function (...args) {
-      try {
         const dbResponse = await pgPool.query(query, args);
         const records = dbResponse.rows.map((record) => camelizeKeys(record));
         return records;
-      } catch (err) {
-        console.log('IORR', err);
-      }
     });
   };
 
@@ -44,13 +40,11 @@ module.exports = (pgPool) => {
     ) {
       const dbResponse = await pgPool.query(query, [fieldValueList]);
       const records = dbResponse.rows.map((record) => camelizeKeys(record));
-      console.log('JG UNGROUPED RECORDS', fieldName, fieldValueList, records)
       const groupedRecords = groupRowsByFieldValue(
         records,
         fieldValueList,
-        fieldName //  [           1              ,       2    ]
+        fieldName
       ); // array of arrays: [[{ record1 } ,{ record2 }], [{ record3}]]
-      console.log('JG GROUPED RECORDS', fieldName, fieldValueList, groupedRecords)
       return singleRecordPerGroup
         ? dearrayGroups(groupedRecords)
         : groupedRecords;
@@ -83,9 +77,18 @@ module.exports = (pgPool) => {
         'id',
         true
       ),
-    addTeam: (team) =>
-      buildStandardQuerier(
-        'INSERT INTO TEAMS (city, name) VALUES ($1, $2) RETURNING *'
-      )(team.city, team.name).then(rows => rows[0]),
+    addTeam: async (team) => {
+      const existingTeam = await buildStandardQuerier(
+        'SELECT * FROM teams WHERE city=$1 AND name=$2 '
+      )(team.city, team.name).then((rows) => rows[0]);
+
+      if (!existingTeam) {
+        return buildStandardQuerier(
+          'INSERT INTO TEAMS (city, name) VALUES ($1, $2) RETURNING *'
+        )(team.city, team.name).then((rows) => rows[0]);
+      } else {
+        throw new Error('Team already exists');
+      }
+    },
   };
 };

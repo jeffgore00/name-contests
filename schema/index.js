@@ -7,9 +7,9 @@ const {
 } = require('graphql');
 
 const postgres = require('../database/pgdb');
-const Team = require('./types/team');
-const Player = require('./types/player');
-const AddTeam = require('./mutations/AddTeam')
+const Team = require('./types/Team');
+const Player = require('./types/Player');
+const AddTeam = require('./mutations/addTeam')
 
 const teams = {
   type: new GraphQLList(Team),
