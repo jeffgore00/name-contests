@@ -10,6 +10,7 @@ const postgres = require('../database/pgdb');
 const Team = require('./types/Team');
 const Player = require('./types/Player');
 const AddTeam = require('./mutations/addTeam')
+const SearchResult = require('./unions/Search')
 
 const teams = {
   type: new GraphQLList(Team),
@@ -45,6 +46,19 @@ const players = {
   },
 };
 
+const search = {
+  type: new GraphQLList(SearchResult),
+  description: 'A search result.',
+  args: {
+    contains: {
+      type: GraphQLString,
+    },
+  },
+  resolve: (obj, args, { pgPool }) => {
+    return postgres(pgPool).search(args.contains);
+  },
+}
+
 // The root query type is where in the data graph
 // we can start asking questions
 const RootQueryType = new GraphQLObjectType({
@@ -52,6 +66,7 @@ const RootQueryType = new GraphQLObjectType({
   fields: () => ({
     teams,
     players,
+    search
   }),
 });
 

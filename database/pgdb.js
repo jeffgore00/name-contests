@@ -54,7 +54,7 @@ module.exports = (pgPool) => {
   return {
     getPlayers: buildStandardQuerier('SELECT * FROM players'),
     getPlayersByName: (nameStr) =>
-      buildStandardQuerier('SELECT * FROM players WHERE full_name ILIKE $1')(
+      buildStandardQuerier("SELECT * FROM players WHERE first_name ILIKE $1 OR last_name ILIKE $1")(
         `%${nameStr}%`
       ),
     getTeams: buildStandardQuerier('SELECT * FROM teams'),
@@ -90,5 +90,10 @@ module.exports = (pgPool) => {
         throw new Error('Team already exists');
       }
     },
+    search: async function (searchStr) {
+      const playerResults = await this.getPlayersByName(searchStr);
+      const teamResults = await this.getTeamsByName(searchStr);
+      return playerResults.concat(teamResults);
+    }
   };
 };

@@ -17,7 +17,7 @@ module.exports = new GraphQLObjectType({
       name: { type: GraphQLString },
       city: { type: new GraphQLNonNull(GraphQLString) },
       fullName: {
-        type: GraphQLString,
+        type: new GraphQLNonNull(GraphQLString),
         resolve: (obj) => `${obj.city} ${obj.name}`,
       },
       owners: {
